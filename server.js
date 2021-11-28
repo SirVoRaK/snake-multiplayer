@@ -14,6 +14,8 @@ const canvas = {
 }
 const pixelSize = 20
 
+const delay = 100
+
 sockets.on('connection', socket => {
     console.log(`> Client connected ${socket.id}`)
     socket.on('disconnect', () => {
@@ -29,15 +31,17 @@ sockets.on('connection', socket => {
         tail: [],
         score: 0,
         username: socket.id,
-        color: 'black'
+        color: 'black',
+        direction: undefined,
     })
 
     socket.emit('setup', game.state)
     sockets.sockets.emit('scores', getScores())
     updateClients()
     socket.on('move', direction => {
-        game.movePlayer(socket.id, direction)
-        updateClients()
+        //game.movePlayer(socket.id, direction)
+        changeDirection(socket.id, direction)
+        // updateClients()
     })
     socket.on('play', e => {
         game.state.players[socket.id].username = e.username
@@ -163,27 +167,29 @@ function createGame() {
         const player = id
         const players = state.players
         const moves = {
-            arrowup: () => {
+            up: () => {
                 players[player].y--
                 if (players[player].y < 0) players[player].y = Math.floor(canvas.height / pixelSize - 1)
             },
-            arrowdown: () => {
+            down: () => {
                 players[player].y++
                 if (players[player].y > Math.floor(canvas.height / pixelSize - 1)) players[player].y = 0
             },
-            arrowleft: () => {
+            left: () => {
                 players[player].x--
                 if (players[player].x < 0) players[player].x = Math.floor(canvas.width / pixelSize - 1)
             },
-            arrowright: () => {
+            right: () => {
                 players[player].x++
                 if (players[player].x > Math.floor(canvas.width / pixelSize - 1)) players[player].x = 0
             }
         }
-        moves.w = moves.arrowup
+        /* moves.w = moves.arrowup
         moves.a = moves.arrowleft
         moves.s = moves.arrowdown
-        moves.d = moves.arrowright
+        moves.d = moves.arrowright */
+
+        if (!players[player]) return
 
         if (moves[direction.toLowerCase()]) {
             players[player].tail.push({
@@ -238,8 +244,18 @@ function createGame() {
                 }
             }
         }
-
     }
+
+    function movePlayers() {
+        for (const playerId in state.players) {
+            try {
+                movePlayer(playerId, state.players[playerId].direction)
+            } catch (e) {}
+        }
+        updateClients()
+    }
+
+    let moveLoop = setInterval(movePlayers, delay)
 
     return {
         state,
@@ -249,6 +265,31 @@ function createGame() {
         removeFruit,
         movePlayer
     }
+}
+
+function changeDirection(id, direction) {
+    const accepted = {
+        ArrowUp: 'up',
+        ArrowDown: 'down',
+        ArrowLeft: 'left',
+        ArrowRight: 'right',
+        d: 'right',
+        w: 'up',
+        a: 'left',
+        s: 'down'
+    }
+    if (!accepted[direction]) return
+
+    const newDir = accepted[direction]
+    if (game.state.players[id].score > 0) {
+        const cur = game.state.players[id].direction
+        if (cur == 'down' && newDir == 'up') return
+        if (cur == 'up' && newDir == 'down') return
+        if (cur == 'left' && newDir == 'right') return
+        if (cur == 'right' && newDir == 'left') return
+    }
+
+    game.state.players[id].direction = newDir
 }
 
 let game
