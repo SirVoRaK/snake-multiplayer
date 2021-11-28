@@ -8,7 +8,7 @@ const sockets = socketio(server)
 
 app.use(express.static('public'))
 
-let stop = false
+// let stop = false
 
 const canvas = {
     width: 600,
@@ -38,11 +38,11 @@ sockets.on('connection', socket => {
         lastDirection: undefined,
         pointQueue: 0
     })
-    if (!stop) {
+    /* if (!stop) {
         game.state.players[socket.id].pointQueue = 100
         game.state.players[socket.id].score = 100
         stop = true
-    }
+    } */
 
     socket.emit('setup', game.state)
     sockets.sockets.emit('scores', getScores())
