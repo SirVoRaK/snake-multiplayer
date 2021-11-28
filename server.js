@@ -8,6 +8,8 @@ const sockets = socketio(server)
 
 app.use(express.static('public'))
 
+let stop = false
+
 const canvas = {
     width: 600,
     height: 600
@@ -33,7 +35,14 @@ sockets.on('connection', socket => {
         username: socket.id,
         color: 'black',
         direction: undefined,
+        lastDirection: undefined,
+        pointQueue: 0
     })
+    if (!stop) {
+        game.state.players[socket.id].pointQueue = 100
+        game.state.players[socket.id].score = 100
+        stop = true
+    }
 
     socket.emit('setup', game.state)
     sockets.sockets.emit('scores', getScores())
@@ -151,7 +160,6 @@ function createGame() {
     function addPlayer(newPlayer) {
         if (canPlayerSpawn(newPlayer.x, newPlayer.y)) {
             state.players[newPlayer.id] = newPlayer
-            state.players[newPlayer.id].wait = false
         } else {
             newPlayer.x = Math.floor(Math.random() * canvas.width / pixelSize)
             newPlayer.y = Math.floor(Math.random() * canvas.height / pixelSize)
@@ -197,10 +205,34 @@ function createGame() {
                 y: players[player].y,
             })
 
-            moves[direction.toLowerCase()]()
+            const p = players[player]
 
-            if (players[player].wait) {
-                players[player].wait = false
+            function moveToLast() {
+                moves[p.lastDirection]()
+                p.direction = p.lastDirection
+            }
+
+            if (p.score > 0) {
+                if (p.direction == 'up' && p.lastDirection == 'down') {
+                    moveToLast()
+                } else if (p.direction == 'down' && p.lastDirection == 'up') {
+                    moveToLast()
+                } else if (p.direction == 'left' && p.lastDirection == 'right') {
+                    moveToLast()
+                } else if (p.direction == 'right' && p.lastDirection == 'left') {
+                    moveToLast()
+                } else {
+                    p.lastDirection = p.direction
+                    moves[p.direction]()
+                }
+            } else {
+                moves[direction]()
+                p.lastDirection = direction
+            }
+
+
+            if (players[player].pointQueue > 0) {
+                players[player].pointQueue--
             } else {
                 players[player].tail.shift()
             }
@@ -219,7 +251,7 @@ function createGame() {
             const fruit = fruits[fruitId]
 
             if (players[testingPlayer].x === fruit.x && players[testingPlayer].y === fruit.y) {
-                players[testingPlayer].wait = true
+                players[testingPlayer].pointQueue++
                 players[testingPlayer].score++
                 removeFruit(fruit)
                 addFruit({
@@ -236,6 +268,8 @@ function createGame() {
                     try {
                         const tail = players[playerId].tail[tailIndex]
                         if (players[testingPlayer].x === tail.x && players[testingPlayer].y === tail.y) {
+                            players[playerId].pointQueue = players[playerId].pointQueue + players[testingPlayer].score
+                            players[playerId].score = players[playerId].score + players[testingPlayer].score
                             removePlayer(testingPlayer)
                             sockets.to(testingPlayer).emit('gameover')
                             sockets.sockets.emit('scores', getScores())
@@ -281,6 +315,7 @@ function changeDirection(id, direction) {
     if (!accepted[direction]) return
 
     const newDir = accepted[direction]
+    if (!game.state.players[id]) return
     if (game.state.players[id].score > 0) {
         const cur = game.state.players[id].direction
         if (cur == 'down' && newDir == 'up') return
