@@ -69,7 +69,7 @@ function updateClients() {
 
 server.listen(process.env.PORT || 3000, () => {
     console.log(`> Server listening on port ${process.env.PORT}`)
-    console.log('> http://localhost:3000')
+    console.log(`> http://localhost:${process.env.PORT}`)
 })
 
 function getScores() {
