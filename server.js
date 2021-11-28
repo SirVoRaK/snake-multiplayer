@@ -106,17 +106,20 @@ function createGame() {
 
     function addFruit({
         x,
-        y
+        y,
+        value
     }) {
         if (canFruitSpawn(x, y)) {
             state.fruits[`x${x}y${y}`] = {
                 x,
-                y
+                y,
+                value: value
             }
         } else {
             addFruit({
                 x: Math.floor(Math.random() * canvas.width / pixelSize),
-                y: Math.floor(Math.random() * canvas.height / pixelSize)
+                y: Math.floor(Math.random() * canvas.height / pixelSize),
+                value: value
             })
         }
     }
@@ -251,16 +254,19 @@ function createGame() {
             const fruit = fruits[fruitId]
 
             if (players[testingPlayer].x === fruit.x && players[testingPlayer].y === fruit.y) {
-                players[testingPlayer].pointQueue++
-                players[testingPlayer].score++
+                players[testingPlayer].pointQueue = players[testingPlayer].pointQueue + fruit.value
+                players[testingPlayer].score = players[testingPlayer].score + fruit.value
                 removeFruit(fruit)
                 addFruit({
                     x: Math.floor(Math.random() * canvas.width / pixelSize),
-                    y: Math.floor(Math.random() * canvas.height / pixelSize)
+                    y: Math.floor(Math.random() * canvas.height / pixelSize),
+                    value: 1
                 })
                 sockets.sockets.emit('scores', getScores())
             }
         }
+
+        // let fruitsToSpawn = []
 
         for (const p in players) {
             for (const playerId in players) {
@@ -269,8 +275,25 @@ function createGame() {
                         const tail = players[playerId].tail[tailIndex]
                         if (players[testingPlayer].x === tail.x && players[testingPlayer].y === tail.y) {
                             players[playerId].pointQueue = players[playerId].pointQueue + players[testingPlayer].score
+                            let deadPlayer
+                            if (testingPlayer == playerId) {
+                                deadPlayer = {
+                                    x: players[testingPlayer].x,
+                                    y: players[testingPlayer].y,
+                                    score: players[testingPlayer].score,
+                                }
+
+                                console.log(players[testingPlayer].score)
+                            }
                             players[playerId].score = players[playerId].score + players[testingPlayer].score
                             removePlayer(testingPlayer)
+                            if (deadPlayer) {
+                                addFruit({
+                                    x: deadPlayer.x,
+                                    y: deadPlayer.y,
+                                    value: deadPlayer.score
+                                })
+                            }
                             sockets.to(testingPlayer).emit('gameover')
                             sockets.sockets.emit('scores', getScores())
                         }
@@ -278,6 +301,11 @@ function createGame() {
                 }
             }
         }
+
+        /* for (const fruits of fruitsToSpawn) {
+            console.log(fruits, fruit)
+            addFruits(fruits)
+        } */
     }
 
     function movePlayers() {
@@ -287,6 +315,12 @@ function createGame() {
             } catch (e) {}
         }
         updateClients()
+    }
+
+    function addFruits(fruits) {
+        for (const fruit of fruits) {
+            addFruit(fruits[fruit])
+        }
     }
 
     let moveLoop = setInterval(movePlayers, delay)
@@ -333,15 +367,18 @@ function start() {
     game = createGame()
     game.addFruit({
         x: Math.floor(Math.random() * canvas.width / pixelSize),
-        y: Math.floor(Math.random() * canvas.height / pixelSize)
+        y: Math.floor(Math.random() * canvas.height / pixelSize),
+        value: 1
     })
     game.addFruit({
         x: Math.floor(Math.random() * canvas.width / pixelSize),
-        y: Math.floor(Math.random() * canvas.height / pixelSize)
+        y: Math.floor(Math.random() * canvas.height / pixelSize),
+        value: 1
     })
     game.addFruit({
         x: Math.floor(Math.random() * canvas.width / pixelSize),
-        y: Math.floor(Math.random() * canvas.height / pixelSize)
+        y: Math.floor(Math.random() * canvas.height / pixelSize),
+        value: 1
     })
 }
 
