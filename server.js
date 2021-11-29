@@ -371,6 +371,7 @@ function room(roomId) {
                                 }
                                 sockets.to(testingPlayer).emit('gameover')
                                 updateScores()
+                                break
                             }
                         } catch (e) {
                             console.log(tail, players[testingPlayer])
