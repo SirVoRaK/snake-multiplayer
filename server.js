@@ -31,7 +31,9 @@ sockets.on('connection', (socket) => {
             games[roomId].join(socket)
             socket.on('disconnect', () => {
                 console.log(`> Client ${socket.id} left room ${roomId}`)
-                games[roomId].leave(socket)
+                if (games[roomId]) {
+                    games[roomId].leave(socket)
+                }
             })
         } else {
             socket.emit('not-found')
@@ -370,7 +372,9 @@ function room(roomId) {
                                 sockets.to(testingPlayer).emit('gameover')
                                 updateScores()
                             }
-                        } catch (e) {}
+                        } catch (e) {
+                            console.log(e)
+                        }
                     }
                 }
             }
