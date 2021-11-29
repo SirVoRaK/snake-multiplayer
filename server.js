@@ -329,6 +329,7 @@ function room(roomId) {
             const players = state.players
             const fruits = state.fruits
 
+
             for (const fruitId in fruits) {
                 const fruit = fruits[fruitId]
 
@@ -345,8 +346,12 @@ function room(roomId) {
                 }
             }
 
+            let breakLoop = false
+
             for (const p in players) {
+                if (breakLoop) break
                 for (const playerId in players) {
+                    if (breakLoop) break
                     for (const tailIndex in players[playerId].tail) {
                         try {
                             const tail = players[playerId].tail[tailIndex]
@@ -371,6 +376,7 @@ function room(roomId) {
                                 }
                                 sockets.to(testingPlayer).emit('gameover')
                                 updateScores()
+                                breakLoop = true
                                 break
                             }
                         } catch (e) {
