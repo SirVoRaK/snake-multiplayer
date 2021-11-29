@@ -52,7 +52,7 @@ const canvas = {
     height: 600
 }
 const pixelSize = 20
-const delay = 100
+const delay = 125
 
 const games = {}
 
@@ -373,6 +373,7 @@ function room(roomId) {
                                 updateScores()
                             }
                         } catch (e) {
+                            console.log(tail, players[testingPlayer])
                             console.log(e)
                         }
                     }
