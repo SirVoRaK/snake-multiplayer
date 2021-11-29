@@ -18,6 +18,8 @@ const pixelSize = 20
 
 const delay = 100
 
+const messages = []
+
 sockets.on('connection', socket => {
     console.log(`> Client connected ${socket.id}`)
     socket.on('disconnect', () => {
@@ -45,6 +47,7 @@ sockets.on('connection', socket => {
     } */
 
     socket.emit('setup', game.state)
+    socket.emit('messages', messages)
     sockets.sockets.emit('scores', getScores())
     updateClients()
     socket.on('move', direction => {
@@ -74,15 +77,26 @@ sockets.on('connection', socket => {
         updateClients()
         sockets.sockets.emit('scores', getScores())
     })
+    socket.on('message', e => {
+        const message = {
+            author: game.state.players[socket.id].username,
+            message: e
+        }
+        messages.push(message)
+        sockets.sockets.emit('message', message)
+        console.log(messages)
+    })
 })
 
 function updateClients() {
     sockets.sockets.emit('update', game.state)
 }
 
-server.listen(process.env.PORT || 3000, () => {
-    console.log(`> Server listening on port ${process.env.PORT}`)
-    console.log(`> http://localhost:${process.env.PORT}`)
+const port = process.env.PORT || 3000
+
+server.listen(port, () => {
+    console.log(`> Server listening on port ${port}`)
+    console.log(`> http://localhost:${port}`)
 })
 
 function getScores() {
